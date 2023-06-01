@@ -31,7 +31,7 @@ const CustomerBarberPage = ({ navigation, route }) => {
     }
   }
 
-  const handleSelectDateTime = (serviceId) => {
+  const handleSelectDateTime = (barberId, serviceId) => {
     navigation.navigate("BarberDateTime", { barberId, serviceId });
   };
 
@@ -44,7 +44,7 @@ const CustomerBarberPage = ({ navigation, route }) => {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.serviceItem}
-            onPress={() => handleSelectDateTime(item.id)}
+            onPress={() => handleSelectDateTime(barberId, item.id)}
           >
             <Text style={styles.serviceName}>{item.name}</Text>
             <Text style={styles.servicePrice}>Price: ${item.price.toFixed(2)}</Text>

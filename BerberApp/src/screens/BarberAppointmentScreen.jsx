@@ -1,23 +1,89 @@
-import React from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { supabase } from "../lib/supabase";
+import { AuthContext } from "../context/AuthContext";
 
 const BarberAppointmentScreen = () => {
-  const appointments = [
-    { id: 1, customer: "John Doe", service: "Haircut", time: "10:00 AM" },
-    { id: 2, customer: "Jane Smith", service: "Shave", time: "11:30 AM" },
-    { id: 3, customer: "Mike Johnson", service: "Beard Trim", time: "2:00 PM" },
-  ];
+  const [appointments, setAppointments] = useState([]); //
+  const { session } = useContext(AuthContext);
+
+  useEffect(() => {
+    if (session) {
+      getAppointments();
+    }
+  }, [session]);
+
+  async function getAppointments() {
+    try {
+      if (!session?.user) throw new Error("No user on the session!");
+
+      let { data, error, status } = await supabase
+        .from("appointments")
+        .select(
+          `
+          id,
+          start_time,
+          end_time,
+          services(name),
+          barbers(name),
+          users(name, phone_number)
+        `
+        )
+        .eq("barber_id", session.user.id);
+
+      if (error && status !== 406) {
+        throw error;
+      }
+
+      if (data) {
+        setAppointments(data);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(error.message);
+      }
+    }
+  }
+  function formatTime(date) {
+    const options = {
+      hour: "numeric",
+      minute: "numeric",
+    };
+    return new Date(date).toLocaleString("tr-TR", options);
+  }
 
   const renderAppointments = () => {
-    return appointments.map((appointment) => (
-      <View style={styles.appointmentContainer} key={appointment.id}>
-        <Text style={styles.appointmentCustomer}>{appointment.customer}</Text>
-        <Text style={styles.appointmentService}>{appointment.service}</Text>
-        <Text style={styles.appointmentTime}>{appointment.time}</Text>
-      </View>
-    ));
+    {
+      let currentDate = null;
+      return appointments.map((appointment) => {
+        const appointmentDate = new Date(appointment.start_time).toLocaleDateString("tr-TR");
+        let renderedComponent = null;
+        if (currentDate !== appointmentDate) {
+          currentDate = appointmentDate;
+          renderedComponent = (
+            <>
+              <View style={styles.dateSeparator} />
+              <Text style={styles.dateSeparatorText}>{currentDate}</Text>
+            </>
+          );
+        }
+        return (
+          <React.Fragment key={appointment.id}>
+            {renderedComponent}
+            <View style={styles.appointmentContainer}>
+              <Text style={styles.appointmentCustomer}>
+                {appointment.users.name} Telefon: {appointment.users.phone_number}
+              </Text>
+              <Text style={styles.appointmentService}>{appointment.services.name}</Text>
+              <Text style={styles.appointmentTime}>
+                {formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}
+              </Text>
+            </View>
+          </React.Fragment>
+        );
+      });
+    }
   };
-
   return (
     <View style={styles.container}>
       <View style={styles.navbar}>
@@ -26,12 +92,11 @@ const BarberAppointmentScreen = () => {
       {appointments.length > 0 ? (
         <View style={styles.appointmentsContainer}>{renderAppointments()}</View>
       ) : (
-        <Text style={styles.noAppointmentsText}>No appointments for today</Text>
+        <Text style={styles.noAppointmentsText}>Bugün için randevu yok</Text>
       )}
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -88,6 +153,17 @@ const styles = StyleSheet.create({
     color: "#666666",
     textAlign: "center",
   },
+  dateSeparator: {
+    backgroundColor: "#e5e5e5",
+    height: 1,
+    marginVertical: 16,
+  },
+  dateSeparatorText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333333",
+    textAlign: "center",
+    marginBottom: 8,
+  },
 });
-
 export default BarberAppointmentScreen;

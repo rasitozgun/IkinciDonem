@@ -6,7 +6,6 @@ import { supabase } from "../lib/supabase";
 const CustomerScreen = ({ navigation }) => {
   const [shopProfile, setShopProfile] = useState({
     name: "",
-    address: "",
     email: "",
     phoneNumber: "",
   });
@@ -14,7 +13,7 @@ const CustomerScreen = ({ navigation }) => {
 
   const handleEditProfile = () => {
     // Navigate to the edit profile screen
-    navigation.navigate("BarberEditProfile");
+    navigation.navigate("EditCustomerProfile");
   };
 
   useEffect(() => {
@@ -37,7 +36,6 @@ const CustomerScreen = ({ navigation }) => {
       if (data) {
         setShopProfile({
           name: data.name,
-          address: data.address,
           email: data.email,
           phoneNumber: data.phone_number,
         });

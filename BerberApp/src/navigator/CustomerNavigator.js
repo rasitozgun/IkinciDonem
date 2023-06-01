@@ -10,6 +10,7 @@ import CustomerScreen from "../screens/CustomerScreen";
 import CustomerBarberList from "../screens/CustomerBarberList";
 import CustomerBarberPage from "../screens/CustomerBarberPage";
 import CustomerBarberDateTime from "../screens/CustomerBarberDateTime";
+import CustomerEditProfile from "../screens/CustomerEditProfile";
 
 const Tab = createBottomTabNavigator();
 const CustomerStack = createStackNavigator();
@@ -29,6 +30,7 @@ const CustomerProfileNavigator = () => {
   return (
     <ShopStack.Navigator initialRouteName="CustomerProfile" screenOptions={{ headerShown: false }}>
       <ShopStack.Screen name="CustomerProfile" component={CustomerScreen} />
+      <ShopStack.Screen name="EditCustomerProfile" component={CustomerEditProfile} />
     </ShopStack.Navigator>
   );
 };

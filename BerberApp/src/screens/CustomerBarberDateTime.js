@@ -7,9 +7,9 @@ import { AuthContext } from "../context/AuthContext";
 
 const DateTimePickerScreen = ({ navigation, route }) => {
   const [selectedDate, setSelectedDate] = useState(moment());
-  const [showPicker, setShowPicker] = useState(true);
+  const [showPicker, setShowPicker] = useState(false);
   const { barberId, serviceId } = route.params;
-  const { session } = useContext(AuthContext);
+  const { setLoading, session } = useContext(AuthContext);
 
   const handleDateChange = (date) => {
     if (date) {
@@ -18,34 +18,77 @@ const DateTimePickerScreen = ({ navigation, route }) => {
   };
 
   const handleConfirm = async (date) => {
+    setLoading(true);
     setShowPicker(false);
     if (date) {
       setSelectedDate(moment(date));
+      const start_time = moment(date).toISOString();
+      const end_time = moment(date).add(30, "minutes").toISOString();
 
-      const updates = {
-        customer_id: session?.user.id,
-        barber_id: barberId,
-        service_id: serviceId,
-        start_time: moment(date).toISOString(),
-        end_time: moment(date).add(30, "minutes").toISOString(),
-      };
+      // Check if there is an appointment at the selected time
+      const { data: appointmentTimeData, error: appointmentTimeError } = await supabase
+        .from("appointments")
+        .select()
+        .eq("customer_id", session?.user.id);
 
-      // Create appointment using Supabase
-      const { data, error } = await supabase.from("appointments").insert(updates);
+      const { data: customerAppointmentData, error: customerAppointmentError } = await supabase
+        .from("appointments")
+        .select()
+        .eq("barber_id", barberId)
+        .gte("start_time", start_time)
+        .lte("end_time", end_time);
 
-      if (error) {
-        console.error("Error creating appointment:", error);
+      if (customerAppointmentError || appointmentTimeError) {
+        console.error(
+          "Error checking appointment:",
+          customerAppointmentError || appointmentTimeError
+        );
         // Handle error
+      } else if (appointmentTimeData.length > 0) {
+        console.log("Zaten bir randevunuz var");
+        alert("Zaten bir randevunuz var");
+        // Display an error message and navigate back to the barber page
+        // Example: Alert.alert("Error", "There is already an appointment at this time.");
+        setInterval(() => {
+          navigation.navigate("BarberPage", { barberId });
+          setLoading(false);
+        }, 2000);
+      } else if (customerAppointmentData.length > 0) {
+        console.log("Bu tarihte müsait değil");
+        alert("Bu tarihte müsait değil");
+        // Display an error message and navigate back to the barber page
+        // Example: Alert.alert("Error", "There is already an appointment at this time.");
+        setInterval(() => {
+          navigation.navigate("BarberPage", { barberId });
+          setLoading(false);
+        }, 2000);
       } else {
-        console.log("Appointment created successfully:", data);
-        // Handle success
+        const updates = {
+          customer_id: session?.user.id,
+          barber_id: barberId,
+          service_id: serviceId,
+          start_time,
+          end_time,
+        };
+
+        // Create appointment using Supabase
+        const { data, error } = await supabase.from("appointments").insert(updates);
+
+        if (error) {
+          console.error("Error creating appointment:", error);
+          // Handle error
+        } else {
+          console.log("Appointment created successfully:", data);
+          // Handle success
+          setLoading(false);
+        }
       }
     }
   };
 
   const handleCancel = () => {
     setShowPicker(false);
-    navigation.navigate("CustomerAppointmentScreen"); // Navigate back to previous screen
+    navigation.navigate("BarberPage", { barberId }); // Navigate back to previous screen
   };
 
   return (
